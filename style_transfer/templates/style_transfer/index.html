@@ -1,0 +1,162 @@
+{% extends 'style_transfer/base.html' %}
+{% load static %}
+{% block content %}
+
+<style>
+    .pic_frame {
+      display: inline-block;
+      text-align: center;
+    }
+</style>
+
+
+<section>
+  <h1>Style Transfer</h1>
+  <p>指定したスタイルへ画像スタイルを変換します。</p>
+  <!-- 画像表示 -->
+  <table cellpadding="5">
+    <tr>
+      <td><img src="{% static 'img/image_before.jpg' %}" width="390px" height="390px"></td>
+      <td><img src="{% static 'img/image_after.jpg' %}" width="390px" height="390px"></td>
+    </tr>
+    <tr>
+      <td>インプット画像(インプット）</td>
+      <td>変換の画像(アウトプット）</td>  
+    </tr>
+  </table>
+</section>  
+<section>
+<hr>
+<h1>Style Transfer</h1>
+<p>アップロードした画像を指定したスタイルへ変換します。</p>
+<!--変換スタイル画像の表示-->
+<p>変換スタイル一覧</p>
+{% for style in styles %}
+<div class="pic_frame">
+    <img src="http://127.0.0.1:8000/media/{{style.image}}" width="210px" height="210px">
+    <p>{{style.name}}</p>
+  </div>
+  {% endfor %}
+
+
+
+<!-- 画像表示 -->
+<table cellpadding="5">
+  <tr>
+    <td class="box6" ><img id="img1" width="390px" height="390px"></td>
+    <td class="box6"><img id="img2" width="390px" height="390px"></td>
+  </tr>
+  <tr>
+    <td>インプット</td>
+    <td>アウトプット</td>
+   
+  </tr>
+</table>
+
+<form action="" method="post" class="form" enctype="multipart/form-data" id="imgForm">
+  {% csrf_token %}
+  <div class="form-group">
+    <div class="custom-file">
+      {{ form.image}}
+      {{form2}}
+    </div>
+  </div>
+  <button type="submit" id="button" class="btn">変換</button>
+</form>
+</section>
+
+<script src="http://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+<!-- javascript -->
+<script>  
+$(function(){
+  $('#id_image').change(function(e){
+    //ファイルオブジェクトを取得する
+    var file = e.target.files[0];
+    var reader = new FileReader();
+ 
+    //画像でない場合は処理終了
+    if(file.type.indexOf("image") < 0){
+      alert("画像ファイルを指定してください。");
+      return false;
+    }
+ 
+    //アップロードした画像を設定する
+    reader.onload = (function(file){
+      return function(e){
+       
+        $("#img1").attr("src", e.target.result);
+        $("#img1").attr("title", file.name);
+      };
+    })(file);
+    reader.readAsDataURL(file);
+ 
+  });
+});
+</script>
+
+<!-- セキュリティ対応-->
+<script>
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    var csrftoken = getCookie('csrftoken');
+
+    function csrfSafeMethod(method) {
+        // these HTTP methods do not require CSRF protection
+        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+    }
+
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+    // セキュリティ対応
+
+   // 画像をアップロード
+        // 送信ボタンで呼ばれる
+        //Ajax通信中にローディングを表示
+        $('#imgForm').on('submit', e => {
+            // デフォルトのイベントをキャンセルし、ページ遷移しないように!
+            e.preventDefault();
+            $(document).ajaxSend(function() {
+          $("#overlay").fadeIn(300);　
+      });
+            var formData = new FormData($('#imgForm').get(0));
+            $.ajax({
+                'url': '{% url "style_transfer:index" %}',
+                'type': 'POST',
+                'processData': false,
+                'contentType': false,
+                'data': formData,
+            }).done( response => { 
+                $("#img2").attr("src", response.img_str);
+                setTimeout(function(){
+                  $("#overlay").fadeOut(300);
+              },500);
+            })
+            .fail((ata, textStatus, xhr) => {
+                alert(xhr);
+            });
+        });
+</script>
+
+
+{% endblock %}
+
