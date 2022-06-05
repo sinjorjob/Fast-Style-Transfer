@@ -17,7 +17,7 @@ Demo
 
 # How to use
 
-## 1.git clone
+## 1.git clone & docker compose up
 
 ```
 git clone https://github.com/sinjorjob/Fast-Style-Transfer.git
